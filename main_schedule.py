@@ -18,7 +18,6 @@ e_channel = int(c["DISCORD"]["error_channel"])
 intents = discord.Intents.default()
 intents.messages = True
 intents.members = True
-intents.moderation = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 
