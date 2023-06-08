@@ -15,10 +15,8 @@ c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
 discord_token = str(c["DISCORD"]["token"])
-ADMIN_ROLES = c["DISCORD"]["admin_roles"]
 ephemeral = bool(True if str(c["DISCORD"]["ephemeral"]) == "True" else False)
-guilds = json.loads(c["DISCORD"]["guilds"])
-e_channel = int(c["DISCORD"]["error_channel"])
+# e_channel = int(c["DISCORD"]["error_channel"])
 intents = discord.Intents.default()
 intents.messages = True
 intents.guild_messages = True
@@ -31,8 +29,8 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('-----------------')
     print("ready")
-    #synced = await bot.tree.sync()
-    #print(f"Synced {len(synced)} commands")
+    # synced = await bot.tree.sync()
+    # print(f"Synced {len(synced)} commands")
 
 
 @bot.tree.command(name="add-to-schedule", description="Add a user and on-call time to the schedule.")
@@ -95,7 +93,7 @@ async def remove_user(interaction: discord.Interaction, schedule_id: int):
 @app_commands.describe()
 async def get_schedule(interaction: discord.Interaction):
     db_connection = database.get_db_connection()
-    response = database.list_schedule(db_connection)
+    response = database.list_schedule(db_connection, interaction.guild_id)
 
     await interaction.response.send_message(tabulate(response), ephemeral=ephemeral)
 
