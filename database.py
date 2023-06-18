@@ -33,7 +33,8 @@ def initial_setup():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("DROP TABLE call_schedule;")
+        # cur.execute("DROP TABLE call_schedule;")
+        # cur.execute("DROP TABLE guild_info;")
 
         cur.execute("CREATE TABLE call_schedule("
                     "schedule_id INT,"
@@ -42,6 +43,13 @@ def initial_setup():
                     "start VARCHAR(4), "
                     "end VARCHAR(4),"
                     "guild BIGINT);")
+
+        cur.execute("CREATE TABLE guild_info("
+                    "guild BIGINT, "
+                    "on_call_role BIGINT);")
+
+        cur.execute(f"INSERT INTO guild_info VALUES(837853470136467517, 1116012502879305749);")  # Vault Staking
+        cur.execute(f"INSERT INTO guild_info VALUES(454734546869551114, 0);")  # Connext Public
 
         conn.commit()
 
@@ -62,6 +70,7 @@ def add_to_schedule(db_connection, user: str, day_of_week: str, start: str, end:
 
         cur.execute(f"INSERT INTO call_schedule VALUES ({next_schedule_id}, \"{user}\", \"{day_of_week}\", \"{start}\", \"{end}\", {guild});")
         db_connection.commit()
+
         return True
     except Exception as e:
         print(e)
@@ -101,6 +110,48 @@ def get_scheduled_users_by_datetime(db_connection, day_of_week, time):
         result = cur.fetchall()
 
         return result
+    except Exception as e:
+        print(e)
+        return False
+
+
+def get_on_call_role(db_connection, guild_id: int):
+    cur = db_connection.cursor()
+
+    try:
+        command = f"SELECT on_call_role " \
+                  f"FROM guild_info " \
+                  f"WHERE guild = {guild_id};"
+        cur.execute(command)
+        return int(cur.fetchall()[0][0])
+
+    except Exception as e:
+        print(e)
+        return False
+
+
+def set_on_call_role(db_connection, guild_id: int, role_id: int):
+    cur = db_connection.cursor()
+
+    try:
+        command = f"UPDATE Guilds " \
+                  f"SET on_call_role = {role_id} " \
+                  f"WHERE guild = {guild_id};"
+        cur.execute(command)
+        db_connection.commit()
+
+    except Exception as e:
+        print(e)
+        return False
+
+
+def clear_schedule(db_connection, guild):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"DELETE FROM call_schedule WHERE guild={guild};")
+        db_connection.commit()
+
+        return True
     except Exception as e:
         print(e)
         return False

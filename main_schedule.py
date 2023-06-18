@@ -40,7 +40,7 @@ async def check_schedule():
     print(current_date, current_time)
 
     # results = (start, end, user, guild)
-    schedules = database.get_scheduled_users_by_datetime(db_connection, current_date, current_time)
+    schedules = database.get_scheduled_users_by_datetime(db_connection, current_date.lower(), current_time)
 
     for schedule in schedules:
         start = str(schedule[0])
@@ -51,13 +51,13 @@ async def check_schedule():
         if start == current_time:
             guild = bot.get_guild(guild_id)
             member = guild.get_member(member_id)
-            role = guild.get_role(1116012502879305749)
+            role = guild.get_role(database.get_on_call_role(db_connection, guild_id))
             await member.add_roles(role)
 
         if end == current_time:
             guild = bot.get_guild(guild_id)
             member = guild.get_member(member_id)
-            role = guild.get_role(1116012502879305749)
+            role = guild.get_role(database.get_on_call_role(db_connection, guild_id))
             await member.remove_roles(role)
 
     db_connection.close()
