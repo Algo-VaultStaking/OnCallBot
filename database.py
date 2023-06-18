@@ -77,6 +77,17 @@ def add_to_schedule(db_connection, user: str, day_of_week: str, start: str, end:
         return False
 
 
+def get_from_schedule(db_connection, schedule_id: int, guild: int):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"SELECT * FROM call_schedule WHERE schedule_id={schedule_id} and guild={guild};")
+        result = cur.fetchall()
+        return result
+    except Exception as e:
+        print(e)
+        return False
+
+
 def remove_from_schedule(db_connection, schedule_id: int, guild: int):
     cur = db_connection.cursor()
     try:
@@ -152,6 +163,17 @@ def clear_schedule(db_connection, guild):
         db_connection.commit()
 
         return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def get_all_users_on_schedule(db_connection, guild: int):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"SELECT user FROM call_schedule WHERE guild={guild};")
+        result = cur.fetchall()
+        return result
     except Exception as e:
         print(e)
         return False
