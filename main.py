@@ -95,21 +95,26 @@ async def add_user(interaction: discord.Interaction, user: str, day_of_week: str
     current_date = datetime.now(pytz.timezone('UTC')).strftime('%a')
     current_time = datetime.now(pytz.timezone('UTC')).strftime('%H%M')
 
-    if current_date.lower() == day_of_week[:3].lower() and start <= current_time < end:
-        member_id = int(user[2:-1])
-        member = interaction.guild.get_member(member_id)
-        role = interaction.guild.get_role(database.get_on_call_role(db_connection, interaction.guild_id))
-        db_connection.close()
-        await member.add_roles(role)
-        await interaction.response.send_message(f"{user} was added to the schedule and is currently on call.", ephemeral=ephemeral)
-        return
+    try:
+        if current_date.lower() == day_of_week[:3].lower() and start <= current_time < end:
+            member_id = int(user[2:-1])
+            member = interaction.guild.get_member(member_id)
+            role = interaction.guild.get_role(database.get_on_call_role(db_connection, interaction.guild_id))
+            db_connection.close()
+            await member.add_roles(role)
+            await interaction.response.send_message(f"{user} was added to the schedule and is currently on call.", ephemeral=ephemeral)
+            return
 
-    if success:
-        await interaction.response.send_message(f"{user} was added to the schedule.", ephemeral=ephemeral)
-        return
+        if success:
+            await interaction.response.send_message(f"{user} was added to the schedule.", ephemeral=ephemeral)
+            return
 
-    if not success:
-        await interaction.response.send_message(f"The user wasn't saved in the database. cc: <@712863455467667526>", ephemeral=ephemeral)
+        if not success:
+            await interaction.response.send_message(f"The user wasn't saved in the database. cc: <@712863455467667526>", ephemeral=ephemeral)
+            return
+    except Exception as e:
+        await interaction.response.send_message(f"Please make sure the on call role is defined (`/set-role`), and the bot's role is moved above the on call role.",
+                                                ephemeral=ephemeral)
         return
 
 
@@ -136,20 +141,25 @@ async def remove_from_schedule(interaction: discord.Interaction, schedule_id: in
 
     success = database.remove_from_schedule(db_connection, schedule_id, interaction.guild_id)
 
-    # if the user is not schedule for this moment, remove the tag
-    current_date = datetime.now(pytz.timezone('UTC')).strftime('%a')
-    current_time = datetime.now(pytz.timezone('UTC')).strftime('%H%M')
-    if not is_user_scheduled(current_date, current_time, user_id):
-        member = interaction.guild.get_member(user_id)
-        role = interaction.guild.get_role(database.get_on_call_role(db_connection, interaction.guild_id))
-        await member.remove_roles(role)
-        db_connection.close()
+    try:
+        # if the user is not schedule for this moment, remove the tag
+        current_date = datetime.now(pytz.timezone('UTC')).strftime('%a')
+        current_time = datetime.now(pytz.timezone('UTC')).strftime('%H%M')
+        if not is_user_scheduled(current_date, current_time, user_id):
+            member = interaction.guild.get_member(user_id)
+            role = interaction.guild.get_role(database.get_on_call_role(db_connection, interaction.guild_id))
+            await member.remove_roles(role)
+            db_connection.close()
 
-    if success:
-        await interaction.response.send_message(f"Schedule ID {schedule_id} was removed from the schedule.", ephemeral=ephemeral)
+        if success:
+            await interaction.response.send_message(f"Schedule ID {schedule_id} was removed from the schedule.", ephemeral=ephemeral)
 
-    if not success:
-        await interaction.response.send_message(f"There was an issue. cc: <@712863455467667526>", ephemeral=ephemeral)
+        if not success:
+            await interaction.response.send_message(f"There was an issue. cc: <@712863455467667526>", ephemeral=ephemeral)
+    except Exception as e:
+        await interaction.response.send_message(f"Please make sure the on call role is defined (`/set-role`), and the bot's role is moved above the on call role.",
+                                                ephemeral=ephemeral)
+        return
 
 
 @bot.tree.command(name="show-schedule", description="Show the current schedule.")
