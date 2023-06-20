@@ -141,15 +141,16 @@ def get_on_call_role(db_connection, guild_id: int):
         return False
 
 
-def set_on_call_role(db_connection, guild_id: int, role_id: int):
+def set_on_call_role(db_connection, guild_id: int, role_id):
     cur = db_connection.cursor()
 
     try:
-        command = f"UPDATE Guilds " \
+        command = f"UPDATE guild_info " \
                   f"SET on_call_role = {role_id} " \
                   f"WHERE guild = {guild_id};"
         cur.execute(command)
         db_connection.commit()
+        return True
 
     except Exception as e:
         print(e)

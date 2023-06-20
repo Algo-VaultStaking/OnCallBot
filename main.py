@@ -185,7 +185,8 @@ async def get_schedule(interaction: discord.Interaction):
 
 @bot.tree.command(name="set-role", description="Set a new on-call role.")
 @app_commands.describe(role_id="The role ID of the new on-call role.")
-async def set_role(interaction: discord.Interaction, role_id: int):
+async def set_role(interaction: discord.Interaction, role_id: str):
+    role_id = int(role_id)
     admin = False
     for role in interaction.user.roles:
         if str(role) in ADMIN_ROLES:
@@ -198,6 +199,7 @@ async def set_role(interaction: discord.Interaction, role_id: int):
     try:
         guild = bot.get_guild(interaction.guild_id)
         role = guild.get_role(role_id)
+        role_name = role.name
     except Exception as e:
         print(e)
         await interaction.response.send_message("This ID is not recognized as a role.", ephemeral=ephemeral)
@@ -207,11 +209,11 @@ async def set_role(interaction: discord.Interaction, role_id: int):
     success = database.set_on_call_role(db_connection, interaction.guild_id, role_id)
 
     if success:
-        await interaction.response.send_message(f"The new role is {role.name}. \n"
+        await interaction.response.send_message(f"The new role is {role_name}. \n"
                                             f"**Please make sure the bot's role is above the on-call role in the settings.**", ephemeral=ephemeral)
         return True
     if not success:
-        await interaction.response.send_message(f"The user wasn't saved in the database. cc: <@712863455467667526>", ephemeral=ephemeral)
+        await interaction.response.send_message(f"The role wasn't saved in the database. cc: <@712863455467667526>", ephemeral=ephemeral)
         return False
 
 
