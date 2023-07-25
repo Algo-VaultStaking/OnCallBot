@@ -1,5 +1,5 @@
 import configparser
-import datetime
+from datetime import datetime, timezone
 import json
 import pytz
 import discord
@@ -9,12 +9,14 @@ import database
 from discord.ext import commands, tasks
 
 # Load config
+# from google_calendar_integration import update_db_from_calendar
+
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
 discord_token = str(c["DISCORD"]["token"])
 guilds = json.loads(c["DISCORD"]["guilds"])
-e_channel = int(c["DISCORD"]["error_channel"])
+connext_core_guild_id = int(c["DISCORD"]["connext_core_guild"])
 intents = discord.Intents.default()
 intents.messages = True
 intents.members = True
@@ -28,40 +30,51 @@ async def on_ready():
     print("ready")
 
     check_schedule.start()
+    # check_calendar.start()
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=10)
 async def check_schedule():
+    print("schedule")
     db_connection = database.get_db_connection()
 
     await bot.wait_until_ready()
-    current_date = datetime.datetime.now(pytz.timezone('UTC')).strftime('%a')
-    current_time = datetime.datetime.now(pytz.timezone('UTC')).strftime('%H%M')
-    print(current_date, current_time)
+    current_time = datetime.now().replace(tzinfo=timezone.utc)
 
-    # results = (start, end, user, guild)
-    schedules = database.get_scheduled_users_by_datetime(db_connection, current_date.lower(), current_time)
+    # results = (start, end, user)
+    schedules = database.get_schedule(db_connection, connext_core_guild_id)
 
     for schedule in schedules:
-        start = str(schedule[0])
-        end = str(schedule[1])
+        start = datetime.strptime(schedule[0], "%Y-%m-%d %H:%M:%S%z")
+        end = datetime.strptime(schedule[1], "%Y-%m-%d %H:%M:%S%z")
         member_id = int(schedule[2][2:-1])
-        guild_id = int(schedule[3])
 
-        if start == current_time:
-            guild = bot.get_guild(guild_id)
+        print("Start: ", start)
+        print("End: ", end)
+
+        if start < current_time < end:
+            print("active")
+            guild = bot.get_guild(connext_core_guild_id)
             member = guild.get_member(member_id)
-            role = guild.get_role(database.get_on_call_role(db_connection, guild_id))
+            role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
             await member.add_roles(role)
 
-        if end == current_time:
-            guild = bot.get_guild(guild_id)
+        else:
+            guild = bot.get_guild(connext_core_guild_id)
             member = guild.get_member(member_id)
-            role = guild.get_role(database.get_on_call_role(db_connection, guild_id))
+            role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
             await member.remove_roles(role)
 
     db_connection.close()
     return True
+
+
+@tasks.loop(hours=1)
+async def check_calendar():
+    print("calendar")
+    await bot.wait_until_ready()
+
+    # update_db_from_calendar()
 
 
 bot.run(discord_token)

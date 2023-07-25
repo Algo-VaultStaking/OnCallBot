@@ -33,23 +33,25 @@ def initial_setup():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # cur.execute("DROP TABLE call_schedule;")
-        # cur.execute("DROP TABLE guild_info;")
+        cur.execute("DROP TABLE call_schedule;")
 
         cur.execute("CREATE TABLE call_schedule("
-                    "schedule_id INT,"
+                    "schedule_id INT, "
+                    "calendar_id VARCHAR(30), "
                     "user VARCHAR(250), "
-                    "day_of_week VARCHAR(10), "
-                    "start VARCHAR(4), "
-                    "end VARCHAR(4),"
+                    "start VARCHAR(30), "
+                    "end VARCHAR(30), "
                     "guild BIGINT);")
 
-        cur.execute("CREATE TABLE guild_info("
-                    "guild BIGINT, "
-                    "on_call_role BIGINT);")
+        #cur.execute("DROP TABLE guild_info;")
 
-        cur.execute(f"INSERT INTO guild_info VALUES(837853470136467517, 1116012502879305749);")  # Vault Staking
-        cur.execute(f"INSERT INTO guild_info VALUES(454734546869551114, 0);")  # Connext Public
+        #cur.execute("CREATE TABLE guild_info("
+        #            "guild BIGINT, "
+        #            "on_call_role BIGINT);")
+
+        #cur.execute(f"INSERT INTO guild_info VALUES(837853470136467517, 1116012502879305749);")  # Vault Staking
+        #cur.execute(f"INSERT INTO guild_info VALUES(454734546869551114, 0);")  # Connext Public
+        #cur.execute(f"INSERT INTO guild_info VALUES(992549151134982234, 1120679303043092631);")  # Connext Private
 
         conn.commit()
 
@@ -59,7 +61,7 @@ def initial_setup():
         print(f"Error: {e}")
 
 
-def add_to_schedule(db_connection, user: str, day_of_week: str, start: str, end: str, guild: int):
+def add_to_schedule(db_connection, calendar_id: str, user: str, start: str, end: str, guild: int):
     cur = db_connection.cursor()
     try:
         try:
@@ -68,7 +70,7 @@ def add_to_schedule(db_connection, user: str, day_of_week: str, start: str, end:
         except Exception as e:
             next_schedule_id = 0
 
-        cur.execute(f"INSERT INTO call_schedule VALUES ({next_schedule_id}, \"{user}\", \"{day_of_week}\", \"{start}\", \"{end}\", {guild});")
+        cur.execute(f"INSERT INTO call_schedule VALUES ({next_schedule_id}, \"{calendar_id}\", \"{user}\", \"{start}\", \"{end}\", {guild});")
         db_connection.commit()
 
         return True
@@ -111,13 +113,12 @@ def list_schedule(db_connection, guild: int):
         return False
 
 
-def get_scheduled_users_by_datetime(db_connection, day_of_week, time):
+def get_schedule(db_connection, guild_id):
     cur = db_connection.cursor()
     try:
-        cur.execute(f"SELECT start, end, user, guild "
+        cur.execute(f"SELECT start, end, user "
                     f"FROM call_schedule "
-                    f"WHERE day_of_week=\"{day_of_week}\" AND"
-                    f"(start=\"{time}\" OR end=\"{time}\");")
+                    f"WHERE guild = {guild_id};")
         result = cur.fetchall()
 
         return result
@@ -177,4 +178,19 @@ def get_all_users_on_schedule(db_connection, guild: int):
         return result
     except Exception as e:
         print(e)
+        return False
+
+
+def get_all_calendar_ids(db_connection, guild: int):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"SELECT calendar_id FROM call_schedule WHERE guild={guild};")
+        result = cur.fetchall()
+        calendar_ids = []
+        for calendar_id in result:
+            calendar_ids.append(calendar_id[0])
+        print(calendar_ids)
+        return calendar_ids
+    except Exception as e:
+        print("get_all_calendar_ids error: ", e)
         return False
