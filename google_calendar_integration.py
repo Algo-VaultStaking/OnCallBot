@@ -18,7 +18,7 @@ c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
 connext_core_guild_id = int(c["DISCORD"]["connext_core_guild"])
-connext_on_call_calendar = str(c["DISCORD"]["connext_on_call_calendar"])
+connext_on_call_calendar = str(c["GENERAL"]["connext_on_call_calendar"])
 
 import database
 
@@ -37,32 +37,41 @@ def update_db_from_calendar():
         # Call the Calendar API
         now = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
         events_result = service.events().list(calendarId=connext_on_call_calendar,
-                                              timeMin=now, maxResults=4, singleEvents=True, orderBy='startTime').execute()
+                                              timeMin=now, maxResults=10, singleEvents=True, orderBy='startTime').execute()
         events = events_result.get('items', [])
 
         if not events:
             print('No upcoming events found.')
             return
 
+        calendar_ids = []
         for event in events:
             calendar_id = str(event["id"])
+            calendar_ids.append(calendar_id)
 
-            # if we don't already have the calendar event in our database
-            if calendar_id not in database.get_all_calendar_ids(db_connection, connext_core_guild_id):
-                try:
-                    start = datetime.strptime(event['start'].get('dateTime', event['start'].get('date')), "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                    end = datetime.strptime(event['end'].get('dateTime', event['end'].get('date')), "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                except:
-                    start = datetime.strptime(event['start'].get('dateTime', event['start'].get('date')), "%Y-%m-%dT%H:%M:%S%z")
-                    end = datetime.strptime(event['end'].get('dateTime', event['end'].get('date')), "%Y-%m-%dT%H:%M:%S%z")
 
-                for attendee in event['attendees']:
-                    if "@connext.network" in attendee['email']:
-                        user_email = attendee["email"]
-                        user_response = attendee["responseStatus"]
-                        user = json.load(open("usermap.json"))[user_email]
+            try:
+                start = datetime.strptime(event['start'].get('dateTime', event['start'].get('date')), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                end = datetime.strptime(event['end'].get('dateTime', event['end'].get('date')), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            except:
+                start = datetime.strptime(event['start'].get('dateTime', event['start'].get('date')), "%Y-%m-%dT%H:%M:%S%z")
+                end = datetime.strptime(event['end'].get('dateTime', event['end'].get('date')), "%Y-%m-%dT%H:%M:%S%z")
 
-                        success = database.add_to_schedule(db_connection, calendar_id, user, start, end, connext_core_guild_id)
+            for attendee in event['attendees']:
+                if "@connext.network" in attendee['email']:
+                    user_email = attendee["email"]
+                    user_response = attendee["responseStatus"]
+                    user = json.load(open("usermap.json"))[user_email]
+
+                    # if we don't already have the calendar event in our database
+                    if calendar_id not in database.get_all_calendar_ids(db_connection, connext_core_guild_id):
+                        success = database.add_to_schedule(db_connection, calendar_id, user, str(start), str(end), connext_core_guild_id)
+                    else:
+                        success = database.update_schedule(db_connection, calendar_id, user, str(start), str(end), connext_core_guild_id)
+
+        for db_cal_id in database.get_all_calendar_ids(db_connection, connext_core_guild_id):
+            if db_cal_id not in calendar_ids:
+                database.remove_from_schedule_by_calendar_id(db_connection, db_cal_id)
 
     except HttpError as error:
         print('An error occurred: %s' % error)

@@ -79,6 +79,20 @@ def add_to_schedule(db_connection, calendar_id: str, user: str, start: str, end:
         return False
 
 
+def update_schedule(db_connection, calendar_id: str, user: str, start: str, end: str, guild: int):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"UPDATE call_schedule "
+                    f"SET user=\"{user}\", start=\"{start}\", end=\"{end}\""
+                    f"WHERE calendar_id=\"{calendar_id}\";")
+        db_connection.commit()
+
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
 def get_from_schedule(db_connection, schedule_id: int, guild: int):
     cur = db_connection.cursor()
     try:
@@ -101,10 +115,21 @@ def remove_from_schedule(db_connection, schedule_id: int, guild: int):
         return False
 
 
+def remove_from_schedule_by_calendar_id(db_connection, calendar_id: str):
+    cur = db_connection.cursor()
+    try:
+        cur.execute(f"DELETE FROM call_schedule WHERE calendar_id=\"{calendar_id}\";")
+        db_connection.commit()
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
 def list_schedule(db_connection, guild: int):
     cur = db_connection.cursor()
     try:
-        cur.execute(f"SELECT schedule_id, day_of_week, start, end, user FROM call_schedule WHERE guild={guild};")
+        cur.execute(f"SELECT schedule_id, start, end, user FROM call_schedule WHERE guild={guild};")
         result = cur.fetchall()
 
         return result
@@ -189,7 +214,6 @@ def get_all_calendar_ids(db_connection, guild: int):
         calendar_ids = []
         for calendar_id in result:
             calendar_ids.append(calendar_id[0])
-        print(calendar_ids)
         return calendar_ids
     except Exception as e:
         print("get_all_calendar_ids error: ", e)

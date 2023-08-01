@@ -30,12 +30,11 @@ async def on_ready():
     print("ready")
 
     check_schedule.start()
-    # check_calendar.start()
+    check_calendar.start()
 
 
-@tasks.loop(minutes=10)
+@tasks.loop(hours=1)
 async def check_schedule():
-    print("schedule")
     db_connection = database.get_db_connection()
 
     await bot.wait_until_ready()
@@ -43,33 +42,33 @@ async def check_schedule():
 
     # results = (start, end, user)
     schedules = database.get_schedule(db_connection, connext_core_guild_id)
+    guild = bot.get_guild(connext_core_guild_id)
+    role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+    on_call_members = []
 
     for schedule in schedules:
         start = datetime.strptime(schedule[0], "%Y-%m-%d %H:%M:%S%z")
         end = datetime.strptime(schedule[1], "%Y-%m-%d %H:%M:%S%z")
-        member_id = int(schedule[2][2:-1])
 
-        print("Start: ", start)
-        print("End: ", end)
+        member_id = int(schedule[2][2:-1])
+        member = guild.get_member(member_id)
 
         if start < current_time < end:
-            print("active")
-            guild = bot.get_guild(connext_core_guild_id)
-            member = guild.get_member(member_id)
-            role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+            on_call_members.append(member)
             await member.add_roles(role)
 
-        else:
-            guild = bot.get_guild(connext_core_guild_id)
-            member = guild.get_member(member_id)
-            role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+        elif current_time > end:
+            await member.remove_roles(role)
+
+    for member in bot.get_guild(connext_core_guild_id).members:
+        if member not in on_call_members:
             await member.remove_roles(role)
 
     db_connection.close()
     return True
 
 
-@tasks.loop(hours=1)
+@tasks.loop(hours=4)
 async def check_calendar():
     print("calendar")
     await bot.wait_until_ready()
