@@ -8,9 +8,9 @@ import database
 
 from discord.ext import commands, tasks
 
-# Load config
-# from google_calendar_integration import update_db_from_calendar
+from google_calendar_integration import update_db_from_calendar
 
+# Load config
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
@@ -73,7 +73,7 @@ async def check_calendar():
     print("calendar")
     await bot.wait_until_ready()
 
-    # update_db_from_calendar()
+    update_db_from_calendar()
 
 
 bot.run(discord_token)
