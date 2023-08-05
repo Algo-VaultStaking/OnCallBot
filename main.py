@@ -1,7 +1,7 @@
 import configparser
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 from tabulate import tabulate
@@ -18,6 +18,7 @@ c.read("config.ini", encoding='utf-8')
 
 discord_token = str(c["DISCORD"]["token"])
 ADMIN_ROLES = c["DISCORD"]["admin_roles"]
+connext_core_guild_id = int(c["DISCORD"]["connext_core_guild"])
 ephemeral = bool(True if str(c["DISCORD"]["ephemeral"]) == "True" else False)
 # e_channel = int(c["DISCORD"]["error_channel"])
 intents = discord.Intents.default()
@@ -175,20 +176,46 @@ async def get_schedule(interaction: discord.Interaction):
     #     return
 
     db_connection = database.get_db_connection()
-    response = database.list_schedule(db_connection, interaction.guild_id)
+    db_response = database.list_schedule(db_connection, interaction.guild_id)
+    response = f"**ID** \t **start time** \t\t\t\t\t\t\t\t\t\t **end time** \t\t\t\t\t\t\t\t\t\t **user on call**\n"
+    for line in db_response:
+        response += f"{line[0]}\t\t{line[1]}\t{line[2]}\t{line[3]}\n"
 
     if not response:
         await interaction.response.send_message(f"The schedule is empty.", ephemeral=ephemeral)
     else:
-        await interaction.response.send_message(tabulate(response), ephemeral=ephemeral)
+        await interaction.response.send_message(response, ephemeral=ephemeral)
+
+
+@bot.tree.command(name="show-active-on-call", description="Show who is currently on call.")
+@app_commands.describe()
+async def get_who_is_on_call(interaction: discord.Interaction):
+    if not is_admin(interaction):
+        await interaction.response.send_message(f"This command is only available for admins.", ephemeral=ephemeral)
+        return
+
+    db_connection = database.get_db_connection()
+
+    schedules = database.get_schedule(db_connection, connext_core_guild_id)
+    active_users = ""
+
+    for schedule in schedules:
+        current_time = datetime.now().replace(tzinfo=timezone.utc)
+        start = datetime.strptime(schedule[0], "%Y-%m-%d %H:%M:%S%z")
+        end = datetime.strptime(schedule[1], "%Y-%m-%d %H:%M:%S%z")
+
+        if start < current_time < end:
+            active_users += f"{schedule[2]} \t "
+
+    await interaction.response.send_message(active_users, ephemeral=ephemeral)
 
 
 @bot.tree.command(name="set-role", description="Set a new on-call role.")
 @app_commands.describe(role_id="The role ID of the new on-call role.")
 async def set_role(interaction: discord.Interaction, role_id: str):
-    # if not is_admin(interaction):
-    #     await interaction.response.send_message(f"This command is only available for admins.", ephemeral=ephemeral)
-    #     return
+    if not is_admin(interaction):
+        await interaction.response.send_message(f"This command is only available for admins.", ephemeral=ephemeral)
+        return
 
     role_id = int(role_id)
 

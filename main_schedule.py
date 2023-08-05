@@ -17,6 +17,7 @@ c.read("config.ini", encoding='utf-8')
 discord_token = str(c["DISCORD"]["token"])
 guilds = json.loads(c["DISCORD"]["guilds"])
 connext_core_guild_id = int(c["DISCORD"]["connext_core_guild"])
+connext_public_guild_id = int(c["DISCORD"]["connext_public_guild"])
 intents = discord.Intents.default()
 intents.messages = True
 intents.members = True
@@ -42,8 +43,10 @@ async def check_schedule():
 
     # results = (start, end, user)
     schedules = database.get_schedule(db_connection, connext_core_guild_id)
-    guild = bot.get_guild(connext_core_guild_id)
-    role = guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+    connext_core_guild = bot.get_guild(connext_core_guild_id)
+    connext_public_guild = bot.get_guild(connext_public_guild_id)
+    core_role = connext_core_guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+    public_role = connext_public_guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
     on_call_members = []
 
     for schedule in schedules:
@@ -51,18 +54,24 @@ async def check_schedule():
         end = datetime.strptime(schedule[1], "%Y-%m-%d %H:%M:%S%z")
 
         member_id = int(schedule[2][2:-1])
-        member = guild.get_member(member_id)
+        core_member = connext_core_guild.get_member(member_id)
+        public_member = connext_public_guild.get_member(member_id)
 
         if start < current_time < end:
-            on_call_members.append(member)
-            await member.add_roles(role)
+            on_call_members.append(core_member)
+            await core_member.add_roles(core_role)
+            await public_member.add_roles(public_role)
 
         elif current_time > end:
-            await member.remove_roles(role)
+            await core_member.remove_roles(core_role)
+            await public_member.remove_roles(public_role)
 
     for member in bot.get_guild(connext_core_guild_id).members:
         if member not in on_call_members:
-            await member.remove_roles(role)
+            core_member = connext_core_guild.get_member(member.id)
+            public_member = connext_public_guild.get_member(member.id)
+            await member.remove_roles(core_member)
+            await member.remove_roles(public_member)
 
     db_connection.close()
     return True

@@ -129,7 +129,8 @@ def remove_from_schedule_by_calendar_id(db_connection, calendar_id: str):
 def list_schedule(db_connection, guild: int):
     cur = db_connection.cursor()
     try:
-        cur.execute(f"SELECT schedule_id, start, end, user FROM call_schedule WHERE guild={guild};")
+        # cur.execute(f"SELECT schedule_id, start, end, user FROM call_schedule WHERE guild={guild};")
+        cur.execute(f"SELECT schedule_id, start, end, user FROM call_schedule;")
         result = cur.fetchall()
 
         return result
@@ -142,8 +143,8 @@ def get_schedule(db_connection, guild_id):
     cur = db_connection.cursor()
     try:
         cur.execute(f"SELECT start, end, user "
-                    f"FROM call_schedule "
-                    f"WHERE guild = {guild_id};")
+                    f"FROM call_schedule ;")
+                    # f"WHERE guild = {guild_id};")
         result = cur.fetchall()
 
         return result
