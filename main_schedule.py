@@ -46,7 +46,7 @@ async def check_schedule():
     connext_core_guild = bot.get_guild(connext_core_guild_id)
     connext_public_guild = bot.get_guild(connext_public_guild_id)
     core_role = connext_core_guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
-    public_role = connext_public_guild.get_role(database.get_on_call_role(db_connection, connext_core_guild_id))
+    public_role = connext_public_guild.get_role(database.get_on_call_role(db_connection, connext_public_guild_id))
     on_call_members = []
 
     for schedule in schedules:
@@ -70,8 +70,8 @@ async def check_schedule():
         if member not in on_call_members:
             core_member = connext_core_guild.get_member(member.id)
             public_member = connext_public_guild.get_member(member.id)
-            await member.remove_roles(core_member)
-            await member.remove_roles(public_member)
+            await core_member.remove_roles(core_role)
+            await public_member.remove_roles(public_role)
 
     db_connection.close()
     return True
