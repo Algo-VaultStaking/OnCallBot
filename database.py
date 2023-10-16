@@ -37,7 +37,7 @@ def initial_setup():
 
         cur.execute("CREATE TABLE call_schedule("
                     "schedule_id INT, "
-                    "calendar_id VARCHAR(30), "
+                    "calendar_id VARCHAR(150), "
                     "user VARCHAR(250), "
                     "start VARCHAR(30), "
                     "end VARCHAR(30), "

@@ -4,7 +4,6 @@ import re
 from datetime import datetime, timezone
 
 import pytz
-from tabulate import tabulate
 
 import discord
 from discord import app_commands
@@ -33,8 +32,8 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('-----------------')
     print("ready")
-    # synced = await bot.tree.sync()
-    # print(f"Synced {len(synced)} commands")
+    synced = await bot.tree.sync()
+    print(f"Synced {len(synced)} commands")
 
 
 # def is_user_scheduled(day, time, user_id):
@@ -50,11 +49,11 @@ async def on_ready():
 #     return False
 #
 #
-# def is_admin(interaction):
-#     for role in interaction.user.roles:
-#         if str(role) in ADMIN_ROLES:
-#             return True
-#     return False
+def is_admin(interaction):
+    for role in interaction.user.roles:
+        if str(role) in ADMIN_ROLES:
+            return True
+    return False
 #
 #
 # # @bot.tree.command(name="add-to-schedule", description="Add a user and on-call time to the schedule.")

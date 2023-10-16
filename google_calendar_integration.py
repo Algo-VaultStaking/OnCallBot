@@ -58,7 +58,7 @@ def update_db_from_calendar():
                 end = datetime.strptime(event['end'].get('dateTime', event['end'].get('date')), "%Y-%m-%dT%H:%M:%S%z")
 
             for attendee in event['attendees']:
-                if "@connext.network" in attendee['email']:
+                if "@connext.network" in attendee['email'] or "@proximalabs.io" in attendee['email']:
                     user_email = attendee["email"]
                     user_response = attendee["responseStatus"]
                     user = json.load(open("usermap.json"))[user_email]
