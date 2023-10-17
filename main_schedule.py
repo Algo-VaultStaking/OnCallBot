@@ -70,8 +70,15 @@ async def check_schedule():
         if member not in on_call_members:
             core_member = connext_core_guild.get_member(member.id)
             public_member = connext_public_guild.get_member(member.id)
-            await core_member.remove_roles(core_role)
-            await public_member.remove_roles(public_role)
+            try:
+                await core_member.remove_roles(core_role)
+            except Exception as error:
+                print('An error occurred: %s' % error)
+
+            try:
+                await public_member.remove_roles(public_role)
+            except Exception as error:
+                print('An error occurred: %s' % error)
 
     db_connection.close()
     return True
