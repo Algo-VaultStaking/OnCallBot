@@ -60,11 +60,17 @@ async def check_schedule():
         if start < current_time < end:
             on_call_members.append(core_member)
             await core_member.add_roles(core_role)
-            await public_member.add_roles(public_role)
+            try:
+                await public_member.add_roles(public_role)
+            except:
+                print(f"Cannot add role, member not in public server: {core_member.name}")
 
         elif current_time > end:
             await core_member.remove_roles(core_role)
-            await public_member.remove_roles(public_role)
+            try:
+                await public_member.remove_roles(public_role)
+            except:
+                print(f"Cannot remove role, member not in public server: {core_member.name}")
 
     for member in bot.get_guild(connext_core_guild_id).members:
         if member not in on_call_members:
