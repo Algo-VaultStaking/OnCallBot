@@ -99,5 +99,3 @@ def check_token():
 
     return creds
 
-
-update_db_from_calendar()
